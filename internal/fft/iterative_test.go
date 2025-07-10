@@ -85,6 +85,7 @@ func Test_IterativeFFT(t *testing.T) {
 			samples:  []complex128{1, -1, 1, -1, 1, -1, 1, -1},
 			expected: []complex128{0, 0, 0, 0, 8, 0, 0, 0},
 		},
+		// Review this case, some complex numbers don't have the correct sign after FFT computation.
 		{
 			name:    "recursive_twiddle_exercice_input",
 			samples: []complex128{0, 1, 0, 0, 0, 0, 0, 0},
