@@ -7,6 +7,7 @@ import "math"
 func Hann(samples []float64) {
 	N := len(samples)
 	for i := range N {
+		// This can be optimized and part of the mathematics that are constants can be computed once.
 		samples[i] *= 0.5 * (1 - math.Cos(2*math.Pi*float64(i)/float64(N-1)))
 	}
 }
