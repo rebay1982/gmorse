@@ -26,9 +26,68 @@ func Test_Normalize16BitPCM(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := NormalizePCM16(tc.samples)
+			got := NormalizePCM16Samples(tc.samples)
 
 			validateNormalizedPCMData(t, tc.expected, got)
+		})
+	}
+}
+
+func Test_IsPowerOfTwo(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    int
+		expected bool
+	}{
+		{
+			name:     "0",
+			input:    0,
+			expected: false,
+		},
+		{
+			name:     "1",
+			input:    1,
+			expected: true,
+		},
+		{
+			name:     "2",
+			input:    2,
+			expected: true,
+		},
+		{
+			name:     "3",
+			input:    3,
+			expected: false,
+		},
+		{
+			name:     "4",
+			input:    4,
+			expected: true,
+		},
+		{
+			name:     "8",
+			input:    8,
+			expected: true,
+		},
+		{
+			name:     "15",
+			input:    15,
+			expected: false,
+		},
+		{
+			name:     "16",
+			input:    16,
+			expected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isPowerOfTwo(tc.input)
+
+			if tc.expected != got {
+				t.Errorf("For input %d: Expected %t, got %t\n", tc.input, tc.expected, got)
+			}
 		})
 	}
 }

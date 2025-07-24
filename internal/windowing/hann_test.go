@@ -57,6 +57,17 @@ func Test_Hann(t *testing.T) {
 	}
 }
 
+func Test_HannFactorRMS(t *testing.T) {
+	N := 4
+	expected := 0.530330
+
+	got := HannFactorRMS(N)
+
+	if !test.Approximately(expected, got) {
+		t.Errorf("Expected %.6f, got %.6f\n", expected, got)
+	}
+}
+
 func validateHanningWindowing(t *testing.T, expected, samples []float64) {
 	expectedLen := len(expected)
 	samplesLen := len(samples)

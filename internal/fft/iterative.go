@@ -1,13 +1,19 @@
 package fft
 
 import (
+	"fmt"
 	"math"
 )
 
-func IterativeFFT(samples []complex128) {
+// IterativeFFT Computes the FFT of samples, a complex128 slice, using the radix2 iterative method. This requires that
+// samples matches a length of a power of 2.
+func IterativeFFT(samples []complex128) error {
+	if !isPowerOfTwo(len(samples)) {
+		return fmt.Errorf("Input sample size must be a power of two.")
+	}
+
 	BitReverseSampleOrder(samples)
-	a := samples
-	n := len(a)
+	n := len(samples)
 
 	// Iterative FFT computation using butterfly operations
 	for size := 2; size <= n; size <<= 1 {
@@ -21,18 +27,20 @@ func IterativeFFT(samples []complex128) {
 			w := complex(1, 0)
 			for j := range halfSize {
 				// Butterfly inputs
-				u := a[start+j]
-				t := w * a[start+j+halfSize]
+				u := samples[start+j]
+				t := w * samples[start+j+halfSize]
 
 				// Butterfly outputs
-				a[start+j] = u + t
-				a[start+j+halfSize] = u - t
+				samples[start+j] = u + t
+				samples[start+j+halfSize] = u - t
 
 				// Update twiddle factor
 				w *= wm
 			}
 		}
 	}
+
+	return nil
 }
 
 func BitReverseSampleOrder(samples []complex128) {
@@ -40,33 +48,32 @@ func BitReverseSampleOrder(samples []complex128) {
 	indices := preComputeBitReverseIndices(nbSamples)
 
 	// Half size only works because the sample size will always be a power of two.
-	for i := range nbSamples >> 1 {
+	for i := range nbSamples {
 		j := indices[i]
 
-		// Don't use arithmetic swaps, costly to compute and can introduce rounding errors.
-		tmp := samples[i]
-		samples[i] = samples[j]
-		samples[j] = tmp
+		if i < j {
+			// Don't use arithmetic swaps, costly to compute and can introduce rounding errors.
+			samples[i], samples[j] = samples[j], samples[i]
+		}
 	}
 }
 
 // preComputeBitReverseIndices call once to get the bit reverse indices for n.
 func preComputeBitReverseIndices(n int) []int {
-	fn := float64(n)
-	maskSize := uint(math.Log2(fn))
+	maskSize := math.Log2(float64(n))
 
 	indices := make([]int, n)
-	for i := range uint(n) {
-		indices[i] = int(reverseBits(i, maskSize))
+	for i := range n {
+		indices[i] = reverseBits(i, int(maskSize))
 	}
 
 	return indices
 }
 
-func reverseBits(in, k uint) uint {
-	var out uint
+func reverseBits(in, k int) int {
+	var out int
 
-	for i := uint(0); i < k; i++ {
+	for range k {
 		out = (out << 1) | (in & 1)
 		in = in >> 1
 	}
