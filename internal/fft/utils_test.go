@@ -1,25 +1,49 @@
 package fft
 
 import (
-	"math"
 	"testing"
+
+	"github.com/rebay1982/gmorse/internal/test"
 )
 
-func validateFFT(t *testing.T, expected, fft []complex128) {
-	expectedLen := len(expected)
-	fftLen := len(fft)
-
-	if expectedLen != fftLen {
-		t.Errorf("Expected length %d, got %d", expectedLen, fftLen)
+func Test_Normalize16BitPCM(t *testing.T) {
+	testCases := []struct {
+		name     string
+		samples  []int16
+		expected []float64
+	}{
+		{
+			name:     "max_positive_16bit_pcm",
+			samples:  []int16{int16(32767)},
+			expected: []float64{0.99997},
+		},
+		{
+			name:     "min_negative_16bit_pcm",
+			samples:  []int16{int16(-32768)},
+			expected: []float64{-1.0},
+		},
 	}
 
-	for k, x := range fft {
-		if !approxEqualComplex(x, expected[k], 0.0001) {
-			t.Errorf("At frequency bin %d: Expected %.2f, got %.2f\n", k, expected[k], x)
-		}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := NormalizePCM16(tc.samples)
+
+			validateNormalizedPCMData(t, tc.expected, got)
+		})
 	}
 }
 
-func approxEqualComplex(x, y complex128, tolerance float64) bool {
-	return math.Abs(real(x)-real(y)) < tolerance && math.Abs(imag(x)-imag(y)) < tolerance
+func validateNormalizedPCMData(t *testing.T, expected, normalized []float64) {
+	expectedLen := len(expected)
+	normalizedLen := len(normalized)
+
+	if expectedLen != normalizedLen {
+		t.Errorf("Expected length %d, got %d", expectedLen, normalizedLen)
+	}
+
+	for i, n := range normalized {
+		if !test.Approximately(n, expected[i]) {
+			t.Errorf("At frequency bin %d: Expected %.7f, got %.7f\n", i, expected[i], n)
+		}
+	}
 }
