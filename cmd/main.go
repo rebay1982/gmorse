@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/gen2brain/malgo"
+	"github.com/rebay1982/gmorse/internal/fft"
+	"github.com/rebay1982/gmorse/internal/windowing"
 )
 
 func main() {
@@ -55,18 +58,39 @@ func main() {
 	deviceConfig.Alsa.NoMMap = 1
 
 	////buffer := make([]byte, blockSize << 1)
+	// Avoid recreating these every time the onReceiveFrames function is called.
+	samples := make([]float64, blockSize)
+	freqSpectrum := make([]complex128, blockSize)
 	onReceiveFrames := func(_, iSamples []byte, sampleCount uint32) {
-		var maxAmplitude int16 = 0
+		startTime := time.Now()
 
+		// Normalize
 		for i := range sampleCount {
-			//for i := 0; i < int(sampleCount); i++ {
-			amplitude := int16(binary.LittleEndian.Uint16(iSamples[i<<1 : (i+1)<<1]))
-			if amplitude > maxAmplitude {
-				maxAmplitude = amplitude
-			}
+			samples[i] = fft.NormalizePCM16(int16(binary.LittleEndian.Uint16(iSamples[i<<1 : (i+1)<<1])))
 		}
 
-		fmt.Printf("Signal amplitude: %d             \r", maxAmplitude)
+		// Window (limits spectral leakage)
+		windowing.Hann(samples)
+
+		for i, s := range samples {
+			freqSpectrum[i] = complex(s, 0)
+		}
+
+		fft.IterativeFFT(freqSpectrum)
+		//var maxAmplitude int16 = 0
+
+		//for i := range sampleCount {
+		//	//for i := 0; i < int(sampleCount); i++ {
+		//	amplitude := int16(binary.LittleEndian.Uint16(iSamples[i<<1 : (i+1)<<1]))
+		//	if amplitude > maxAmplitude {
+		//		maxAmplitude = amplitude
+		//	}
+		//}
+
+		//fmt.Printf("Signal amplitude: %d             \r", maxAmplitude)
+
+		timeDiff := time.Now().Sub(startTime)
+		fmt.Printf("Processed %d in %d us\n", sampleCount, timeDiff/time.Microsecond)
 	}
 
 	captureCallbacks := malgo.DeviceCallbacks{

@@ -26,7 +26,7 @@ func Test_Normalize16BitPCM(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := NormalizePCM16(tc.samples)
+			got := NormalizePCM16Samples(tc.samples)
 
 			validateNormalizedPCMData(t, tc.expected, got)
 		})

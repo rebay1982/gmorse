@@ -9,7 +9,7 @@ package fft
 //	  normalization.
 const PCM_16_DIVISOR = 32768.0
 
-func NormalizePCM16(samples []int16) []float64 {
+func NormalizePCM16Samples(samples []int16) []float64 {
 	N := len(samples)
 	normalized := make([]float64, N)
 
@@ -19,4 +19,8 @@ func NormalizePCM16(samples []int16) []float64 {
 	}
 
 	return normalized
+}
+
+func NormalizePCM16(sample int16) float64 {
+	return float64(sample) / PCM_16_DIVISOR
 }
