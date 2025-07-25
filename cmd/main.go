@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"time"
@@ -13,6 +14,7 @@ import (
 )
 
 func main() {
+
 	// Setup malgo
 	ctx, err := malgo.InitContext(nil, malgo.ContextConfig{}, nil)
 	if err != nil {
@@ -82,85 +84,94 @@ func main() {
 
 		hannFactorRMS := windowing.HannFactorRMS(int(sampleCount))
 		halfSampleCount := int(sampleCount >> 1)
-		for i := range halfSampleCount {
+		//for i := range halfSampleCount {
+		//	// Normalize magnitudes and take into account the hanning window that was applied on the input samples before FFT.
+		//	magnitudes[i] = fft.ComputeMagnitude(freqSpectrum[i]) / hannFactorRMS
+		//}
+		for i := 1; i < int(sampleCount) - 1; i++ {
 			// Normalize magnitudes and take into account the hanning window that was applied on the input samples before FFT.
-			magnitudes[i] = fft.ComputeMagnitude(freqSpectrum[i]) / hannFactorRMS
+			magnitudes[i] = (fft.ComputeMagnitude(freqSpectrum[i]) / blockSize) / hannFactorRMS
 		}
+		magnitudes[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / blockSize) / hannFactorRMS
+		magnitudes[halfSampleCount - 1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount - 1]) / blockSize) / hannFactorRMS
 
 		timeDiff := time.Now().Sub(startTime)
 		fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
 
-		for j := 9; j >= 0; j-- {
-//			for i := range halfSampleCount {
-//				meter := int(magnitudes[i] * 10)
-			if int(magnitudes[1] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
+//		for j := 9; j >= 0; j-- {
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[1]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[4]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[11]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[29]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[74]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[146]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[232]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[329]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[577]))
+			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[788]))
 
-			if int(magnitudes[4] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[11] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[29] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[74] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[146] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[232] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[329] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[557] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-			if int(magnitudes[788] * 10) > j {
-				fmt.Print("::")
-			} else {
-				fmt.Print("  ")
-			}
-
-//				if meter >= j {
-//					fmt.Print("::")
-//				} else {
-//					fmt.Print("  ")
-//				}
+//			if int(magnitudes[1]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
 //			}
-			fmt.Println()
-		}
+//
+//			if int(magnitudes[4]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[11]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[29]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[74]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[146]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[232]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[329]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[557]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+//
+//			if int(magnitudes[788]) > j {
+//				fmt.Print("::")
+//			} else {
+//				fmt.Print("  ")
+//			}
+
+//			fmt.Println()
+//		}
 
 		// Bring the cursor 10 lines up.
 		fmt.Print("\033[11A\r")
