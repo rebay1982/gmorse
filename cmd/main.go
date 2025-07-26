@@ -44,8 +44,8 @@ func main() {
 	fmt.Println("\n\n--- Initializing capture on default device ---")
 	// Setup device to validate capture.
 	const (
-		sampleRate = 44100
-		blockSize  = 2048
+		sampleRate = 8000
+		blockSize  = 256
 		toneFreq   = 700.0
 	)
 
@@ -59,11 +59,10 @@ func main() {
 	deviceConfig.SampleRate = sampleRate
 	deviceConfig.Alsa.NoMMap = 1
 
-	////buffer := make([]byte, blockSize << 1)
 	// Avoid recreating these every time the onReceiveFrames function is called.
 	samples := make([]float64, blockSize)
-	freqSpectrum := make([]complex128, blockSize)
-	magnitudes := make([]float64, blockSize)
+	fspec := make([]complex128, blockSize)
+	normalizedMags := make([]float64, blockSize)
 	onReceiveFrames := func(_, iSamples []byte, sampleCount uint32) {
 		startTime := time.Now()
 
@@ -77,104 +76,43 @@ func main() {
 		windowing.Hann(samples[:sampleCount])
 
 		for i, s := range samples {
-			freqSpectrum[i] = complex(s, 0)
+			fspec[i] = complex(s, 0)
 		}
 
-		fft.IterativeFFT(freqSpectrum)
+		//freqSpectrum := fft.RecursiveFFT(fspec)
+		fft.IterativeFFT(fspec)
+		freqSpectrum := fspec
 
 		hannFactorRMS := windowing.HannFactorRMS(int(sampleCount))
 		halfSampleCount := int(sampleCount >> 1)
-		//for i := range halfSampleCount {
-		//	// Normalize magnitudes and take into account the hanning window that was applied on the input samples before FFT.
-		//	magnitudes[i] = fft.ComputeMagnitude(freqSpectrum[i]) / hannFactorRMS
-		//}
-		for i := 1; i < int(sampleCount) - 1; i++ {
+		for i := 1; i < int(sampleCount)-1; i++ {
 			// Normalize magnitudes and take into account the hanning window that was applied on the input samples before FFT.
-			magnitudes[i] = (fft.ComputeMagnitude(freqSpectrum[i]) / blockSize) / hannFactorRMS
+			normalizedMags[i] = 2.0 * (fft.ComputeMagnitude(freqSpectrum[i]) / float64(sampleCount)) / hannFactorRMS
 		}
-		magnitudes[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / blockSize) / hannFactorRMS
-		magnitudes[halfSampleCount - 1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount - 1]) / blockSize) / hannFactorRMS
+		normalizedMags[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / float64(sampleCount)) / hannFactorRMS
+		normalizedMags[halfSampleCount-1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount-1]) / float64(sampleCount)) / hannFactorRMS
 
 		timeDiff := time.Now().Sub(startTime)
 		fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
 
-//		for j := 9; j >= 0; j-- {
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[1]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[4]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[11]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[29]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[74]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[146]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[232]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[329]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[577]))
-			fmt.Printf("%.4f\n", 20*math.Log10(magnitudes[788]))
+		// Display spectrum
+		for j := 1.0; j <= 10.0; j += 0.5 {
+			dbFloor := j * -10.0
 
-//			if int(magnitudes[1]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[4]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[11]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[29]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[74]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[146]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[232]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[329]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[557]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
-//
-//			if int(magnitudes[788]) > j {
-//				fmt.Print("::")
-//			} else {
-//				fmt.Print("  ")
-//			}
+			for i := range 100 {
+				mag := 20 * math.Log10(normalizedMags[i])
 
-//			fmt.Println()
-//		}
+				if mag > dbFloor {
+					fmt.Print("::")
+				} else {
+					fmt.Print("  ")
+				}
+			}
+			fmt.Println()
+		}
 
 		// Bring the cursor 10 lines up.
-		fmt.Print("\033[11A\r")
+		fmt.Print("\033[21A\r")
 	}
 
 	captureCallbacks := malgo.DeviceCallbacks{
@@ -190,4 +128,6 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	<-sig
+
+	fmt.Println("\nExiting...")
 }

@@ -2,7 +2,6 @@ package fft
 
 import (
 	"math"
-
 )
 
 // Industry standard is to divide by 32768.
@@ -34,14 +33,14 @@ func ComputeMagnitude(sample complex128) float64 {
 	r := real(sample)
 	i := imag(sample)
 
-	return math.Sqrt((r*r) + (i*i))
+	return math.Sqrt((r * r) + (i * i))
 }
 
 func ComputePhaseRad(sample complex128) float64 {
 	r := real(sample)
 	i := imag(sample)
 
-	return math.Atan(i/r)
+	return math.Atan(i / r)
 }
 
 func ComputePhaseDeg(sample complex128) float64 {

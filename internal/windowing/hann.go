@@ -1,6 +1,7 @@
 package windowing
 
 import "math"
+
 const (
 	DOUBLE_PIE = 2 * math.Pi
 )
@@ -25,5 +26,5 @@ func HannFactorRMS(sampleSize int) float64 {
 		factorRMS += w * w
 	}
 
-	return math.Sqrt(factorRMS/float64(N))
+	return math.Sqrt(factorRMS / float64(N))
 }
