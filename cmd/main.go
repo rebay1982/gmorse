@@ -96,8 +96,9 @@ func main() {
 		fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
 
 		// Display spectrum
-		for j := 1.0; j <= 10.0; j += 0.5 {
+		for j := 0.0; j < 10.0; j += 0.5 {
 			dbFloor := j * -10.0
+			fmt.Printf("%06.2f ", dbFloor)
 
 			for i := range 100 {
 				mag := 20 * math.Log10(normalizedMags[i])
