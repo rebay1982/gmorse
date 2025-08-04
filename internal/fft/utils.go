@@ -1,5 +1,9 @@
 package fft
 
+import (
+	"math"
+)
+
 // Industry standard is to divide by 32768.
 //
 //	The max positive 16-bit PCM value is 32767, normalized will be 0.99997.
@@ -9,7 +13,7 @@ package fft
 //	  normalization.
 const PCM_16_DIVISOR = 32768.0
 
-func NormalizePCM16(samples []int16) []float64 {
+func NormalizePCM16Samples(samples []int16) []float64 {
 	N := len(samples)
 	normalized := make([]float64, N)
 
@@ -19,4 +23,34 @@ func NormalizePCM16(samples []int16) []float64 {
 	}
 
 	return normalized
+}
+
+func NormalizePCM16(sample int16) float64 {
+	return float64(sample) / PCM_16_DIVISOR
+}
+
+func ComputeMagnitude(sample complex128) float64 {
+	r := real(sample)
+	i := imag(sample)
+
+	return math.Sqrt((r * r) + (i * i))
+}
+
+func ComputePhaseRad(sample complex128) float64 {
+	r := real(sample)
+	i := imag(sample)
+
+	return math.Atan(i / r)
+}
+
+func ComputePhaseDeg(sample complex128) float64 {
+	return ComputePhaseRad(sample) * 180 / math.Pi
+}
+
+func isPowerOfTwo(x int) bool {
+	if x == 0 {
+		return false
+	} else {
+		return x&(x-1) == 0
+	}
 }

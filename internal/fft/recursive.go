@@ -1,15 +1,22 @@
 package fft
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
-func RecursiveFFT(samples []complex128) []complex128 {
+func RecursiveFFT(samples []complex128) ([]complex128, error) {
 	n := len(samples)
 	nHalved := n >> 1
+
+	if !isPowerOfTwo(n) {
+		return samples, fmt.Errorf("Input sample size must be a power of two.")
+	}
 
 	// We're at the last stage. At this stage, there's no tiddle to compute in the discreet fourier transform since
 	//   m = 0..0, e(-i*2*pi*k*m/n) will be 1.
 	if n == 1 {
-		return samples
+		return samples, nil
 	}
 
 	// Split samples into odd and even samples (purely based on their indices)
@@ -21,8 +28,8 @@ func RecursiveFFT(samples []complex128) []complex128 {
 	}
 
 	// Recursively compute the DFT of each even and odd set.
-	evenFFT := RecursiveFFT(evenSamples)
-	oddFFT := RecursiveFFT(oddSamples)
+	evenFFT, _ := RecursiveFFT(evenSamples)
+	oddFFT, _ := RecursiveFFT(oddSamples)
 
 	// Finally compute the DFT.
 	out := make([]complex128, n)
@@ -36,5 +43,5 @@ func RecursiveFFT(samples []complex128) []complex128 {
 		out[k+nHalved] = evenFFT[k] - twiddle*oddFFT[k]
 	}
 
-	return out
+	return out, nil
 }
