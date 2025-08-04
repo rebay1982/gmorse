@@ -38,13 +38,13 @@ func main() {
 	var strDevId string
 	fmt.Scanln(&strDevId)
 
-	i, err := strconv.Atoi(strDevId)
+	selectedDevId, err := strconv.Atoi(strDevId)
 	if err != nil {
 		fmt.Println("Bad user input, exiting...")
 		os.Exit(1)
 	}
-	if i < 0 || i >= len(cDevs) {
-		fmt.Printf("Bad user input, expecting value between 0 and %d, got %d\n", len(cDevs), i)
+	if selectedDevId < 0 || selectedDevId >= len(cDevs) {
+		fmt.Printf("Bad user input, expecting value between 0 and %d, got %d\n", len(cDevs), selectedDevId)
 		os.Exit(1)
 	}
 
