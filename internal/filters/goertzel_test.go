@@ -1,4 +1,4 @@
-package goertzel
+package filters
 
 import (
 	"github.com/rebay1982/gmorse/internal/fft"

@@ -1,4 +1,4 @@
-package goertzel
+package filters
 
 import "math"
 

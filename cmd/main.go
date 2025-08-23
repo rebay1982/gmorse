@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
+	//"math"
 	"os"
 	"os/signal"
 	"strconv"
@@ -11,7 +11,8 @@ import (
 
 	"github.com/gen2brain/malgo"
 	"github.com/rebay1982/gmorse/internal/fft"
-	"github.com/rebay1982/gmorse/internal/windowing"
+	//"github.com/rebay1982/gmorse/internal/windowing"
+	"github.com/rebay1982/gmorse/internal/filters"
 )
 
 func main() {
@@ -68,59 +69,78 @@ func main() {
 
 	// Avoid recreating these every time the onReceiveFrames function is called.
 	samples := make([]float64, blockSize)
-	fspec := make([]complex128, blockSize)
-	normalizedMags := make([]float64, blockSize)
+//	fspec := make([]complex128, blockSize)
+//	normalizedMags := make([]float64, blockSize)
 	onReceiveFrames := func(_, iSamples []byte, sampleCount uint32) {
 		startTime := time.Now()
 
 		// Normalize
 		for i := range sampleCount {
 			samples[i] = fft.NormalizePCM16(int16(binary.LittleEndian.Uint16(iSamples[i<<1 : (i+1)<<1])))
+			fmt.Print(samples[i])
 		}
 
 		// Window (reduces spectral leakage)
 		// Only apply it to the samples, not the padding.
-		windowing.Hann(samples[:sampleCount])
+		//windowing.Hann(samples[:sampleCount])
 
-		for i, s := range samples {
-			fspec[i] = complex(s, 0)
-		}
-
-		//freqSpectrum := fft.RecursiveFFT(fspec)
-		fft.IterativeFFT(fspec)
-		freqSpectrum := fspec
-
-		hannFactorRMS := windowing.HannFactorRMS(int(sampleCount))
-		halfSampleCount := int(sampleCount >> 1)
-		for i := 1; i < int(sampleCount)-1; i++ {
-			// Normalize magnitudes and take into account the hanning window that was applied on the input samples before FFT.
-			normalizedMags[i] = 2.0 * (fft.ComputeMagnitude(freqSpectrum[i]) / float64(sampleCount)) / hannFactorRMS
-		}
-		normalizedMags[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / float64(sampleCount)) / hannFactorRMS
-		normalizedMags[halfSampleCount-1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount-1]) / float64(sampleCount)) / hannFactorRMS
-
+		goertzel := filters.Goertzel(sampleRate, toneFreq, samples)
+		mag := fft.ComputeMagnitude(goertzel)
+		//// Window (reduces spectral leakage)
+		//// Only apply it to the samples, not the padding.
+		//windowing.Hann(samples[:sampleCount])
+		//
+		//for i, s := range samples {
+		//	fspec[i] = complex(s, 0)
+		//}
+		//
+		////freqSpectrum := fft.RecursiveFFT(fspec)
+		//fft.IterativeFFT(fspec)
+		//freqSpectrum := fspec
+		//
+		//hannFactorRMS := windowing.HannFactorRMS(int(sampleCount))
+		//halfSampleCount := int(sampleCount >> 1)
+		//for i := 1; i < int(sampleCount)-1; i++ {
+		//	// Normalize magnitudes and take into account the hanning window that was applied on the input samples before FFT.
+		//	normalizedMags[i] = 2.0 * (fft.ComputeMagnitude(freqSpectrum[i]) / float64(sampleCount)) / hannFactorRMS
+		//}
+		//normalizedMags[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / float64(sampleCount)) / hannFactorRMS
+		//normalizedMags[halfSampleCount-1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount-1]) / float64(sampleCount)) / hannFactorRMS
+		//
 		timeDiff := time.Now().Sub(startTime)
 		fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
 
-		// Display spectrum
-		for j := 0.0; j < 10.0; j += 0.5 {
-			dbFloor := j * -10.0
-			fmt.Printf("%06.2f ", dbFloor)
 
-			for i := range 100 {
-				mag := 20 * math.Log10(normalizedMags[i])
+		// Display detection
+		//if mag > 1.0 {
+		//	fmt.Print("DETECTION")
+		//} else {
+		//	fmt.Print("         ")
+		//}
+		fmt.Println(mag)
+		fmt.Println(goertzel)
+		fmt.Print("\033[3A\r")
 
-				if mag > dbFloor {
-					fmt.Print("::")
-				} else {
-					fmt.Print("  ")
-				}
-			}
-			fmt.Println()
-		}
-
-		// Bring the cursor 10 lines up.
-		fmt.Print("\033[21A\r")
+		//
+		//// Display spectrum
+		//for j := 0.0; j < 10.0; j += 0.5 {
+		//	dbFloor := j * -10.0
+		//	fmt.Printf("%06.2f ", dbFloor)
+		//
+		//	for i := range 100 {
+		//		mag := 20 * math.Log10(normalizedMags[i])
+		//
+		//		if mag > dbFloor {
+		//			fmt.Print("::")
+		//		} else {
+		//			fmt.Print("  ")
+		//		}
+		//	}
+		//	fmt.Println()
+		//}
+		//
+		//// Bring the cursor 10 lines up.
+		//fmt.Print("\033[21A\r")
 	}
 
 	captureCallbacks := malgo.DeviceCallbacks{
