@@ -3,15 +3,16 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
+	//"math"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
 
 	"github.com/gen2brain/malgo"
-	"github.com/rebay1982/gmorse/internal/fft"
-	"github.com/rebay1982/gmorse/internal/windowing"
+	"github.com/rebay1982/gdsp/fft"
+	"github.com/rebay1982/gdsp/windowing"
+	"github.com/rebay1982/gdsp/filters"
 )
 
 func main() {
@@ -53,7 +54,7 @@ func main() {
 	const (
 		sampleRate = 8000
 		blockSize  = 256
-		toneFreq   = 700.0
+		toneFreq   = 500.0
 	)
 
 	deviceConfig := malgo.DefaultDeviceConfig(malgo.Capture)
@@ -68,8 +69,8 @@ func main() {
 
 	// Avoid recreating these every time the onReceiveFrames function is called.
 	samples := make([]float64, blockSize)
-	fspec := make([]complex128, blockSize)
-	normalizedMags := make([]float64, blockSize)
+	frequencies := []float64{500, 550, 600, 650, 700, 750, 800, 850, 900, 950}
+	mags := make([]float64, len(frequencies))
 	onReceiveFrames := func(_, iSamples []byte, sampleCount uint32) {
 		startTime := time.Now()
 
@@ -82,45 +83,25 @@ func main() {
 		// Only apply it to the samples, not the padding.
 		windowing.Hann(samples[:sampleCount])
 
-		for i, s := range samples {
-			fspec[i] = complex(s, 0)
+		// Retrieve Goertzel calculation for all frequencies.
+		for i, f := range frequencies {
+			goertzel := filters.Goertzel(sampleRate, f, samples)
+			mags[i] = fft.ComputeMagnitude(goertzel) * 2 // Compensate for the Hanning window
 		}
-
-		//freqSpectrum := fft.RecursiveFFT(fspec)
-		fft.IterativeFFT(fspec)
-		freqSpectrum := fspec
-
-		hannFactorRMS := windowing.HannFactorRMS(int(sampleCount))
-		halfSampleCount := int(sampleCount >> 1)
-		for i := 1; i < int(sampleCount)-1; i++ {
-			// Normalize magnitudes and take into account the hanning window that was applied on the input samples before FFT.
-			normalizedMags[i] = 2.0 * (fft.ComputeMagnitude(freqSpectrum[i]) / float64(sampleCount)) / hannFactorRMS
-		}
-		normalizedMags[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / float64(sampleCount)) / hannFactorRMS
-		normalizedMags[halfSampleCount-1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount-1]) / float64(sampleCount)) / hannFactorRMS
 
 		timeDiff := time.Now().Sub(startTime)
 		fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
 
-		// Display spectrum
-		for j := 0.0; j < 10.0; j += 0.5 {
-			dbFloor := j * -10.0
-			fmt.Printf("%06.2f ", dbFloor)
-
-			for i := range 100 {
-				mag := 20 * math.Log10(normalizedMags[i])
-
-				if mag > dbFloor {
-					fmt.Print("::")
-				} else {
-					fmt.Print("  ")
-				}
+		// Display detection
+		for i, f := range frequencies {
+			if mags[i] > 15.0 {
+				fmt.Printf("%.f: DETECTION -- %02.2f         \n", f, mags[i])
+			} else {
+				fmt.Printf("%.f:           -- %02.2f         \n", f, mags[i])
 			}
-			fmt.Println()
 		}
 
-		// Bring the cursor 10 lines up.
-		fmt.Print("\033[21A\r")
+		fmt.Printf("\033[%dA\r", len(frequencies) + 1)
 	}
 
 	captureCallbacks := malgo.DeviceCallbacks{

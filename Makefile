@@ -6,11 +6,17 @@ fmt:
 vet:
 	go vet ./...
 
-build: vet
-	go build -o gmorse ./cmd/main.go
+build-spectrum: vet
+	go build -o spectrum ./cmd/spectrum/spectrum.go
 
-run: build
-	./gmorse 2>/dev/null
+build-goertzel: vet
+	go build -o goertzel ./cmd/goertzel/goertzel.go
 
-test: build
+spectrum: build-spectrum
+	./spectrum 2>/dev/null
+
+goertzel: build-goertzel
+	./goertzel 2>/dev/null
+
+test: 
 	go test -v -count=1 ./...
