@@ -11,7 +11,7 @@ import (
 
 	"github.com/gen2brain/malgo"
 	"github.com/rebay1982/gmorse/internal/fft"
-	//"github.com/rebay1982/gmorse/internal/windowing"
+	"github.com/rebay1982/gmorse/internal/windowing"
 	"github.com/rebay1982/gmorse/internal/filters"
 )
 
@@ -54,7 +54,7 @@ func main() {
 	const (
 		sampleRate = 8000
 		blockSize  = 256
-		toneFreq   = 700.0
+		toneFreq   = 800.0
 	)
 
 	deviceConfig := malgo.DefaultDeviceConfig(malgo.Capture)
@@ -77,15 +77,14 @@ func main() {
 		// Normalize
 		for i := range sampleCount {
 			samples[i] = fft.NormalizePCM16(int16(binary.LittleEndian.Uint16(iSamples[i<<1 : (i+1)<<1])))
-			fmt.Print(samples[i])
 		}
 
 		// Window (reduces spectral leakage)
 		// Only apply it to the samples, not the padding.
-		//windowing.Hann(samples[:sampleCount])
+		windowing.Hann(samples[:sampleCount])
 
 		goertzel := filters.Goertzel(sampleRate, toneFreq, samples)
-		mag := fft.ComputeMagnitude(goertzel)
+		mag := fft.ComputeMagnitude(goertzel) * 2 // Compensate for the hanning window
 		//// Window (reduces spectral leakage)
 		//// Only apply it to the samples, not the padding.
 		//windowing.Hann(samples[:sampleCount])
@@ -107,19 +106,18 @@ func main() {
 		//normalizedMags[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / float64(sampleCount)) / hannFactorRMS
 		//normalizedMags[halfSampleCount-1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount-1]) / float64(sampleCount)) / hannFactorRMS
 		//
+		//normalizedMag := mag / hannFactorRMS
 		timeDiff := time.Now().Sub(startTime)
 		fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
 
 
 		// Display detection
-		//if mag > 1.0 {
-		//	fmt.Print("DETECTION")
-		//} else {
-		//	fmt.Print("         ")
-		//}
-		fmt.Println(mag)
-		fmt.Println(goertzel)
-		fmt.Print("\033[3A\r")
+		if mag> 25.0 {
+			fmt.Printf("DETECTION -- %2.2f    ", mag)
+		} else {
+			fmt.Printf("          -- %2.2f    ", mag)
+		}
+		fmt.Print("\033[1A\r")
 
 		//
 		//// Display spectrum
