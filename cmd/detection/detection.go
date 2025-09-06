@@ -25,9 +25,8 @@ const (
 var samples []float64 = make([]float64, blockSize)
 var frequencies []float64 = []float64{500, 550, 600, 650, 700, 750, 800, 850, 900, 950}
 var mags []float64 = make([]float64, len(frequencies))
+var detectionCh = make(chan bool, 1)
 func OnReceiveFrames(_, iSamples[]byte, sampleCount uint32) {
-		//startTime := time.Now()
-
 		// Normalize
 		for i := range sampleCount {
 			samples[i] = fft.NormalizePCM16(int16(binary.LittleEndian.Uint16(iSamples[i<<1 : (i+1)<<1])))
@@ -43,28 +42,32 @@ func OnReceiveFrames(_, iSamples[]byte, sampleCount uint32) {
 			mags[i] = fft.ComputeMagnitude(goertzel) * 2 // Compensate for the Hanning window
 		}
 
-		//timeDiff := time.Now().Sub(startTime)
-		//fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
-
 		// Display detection
 		detection := false
-		for i, _ := range frequencies {
+		for i := range frequencies {
 			if mags[i] > 20.0 {
 				detection = true
-				//fmt.Printf("%.fHz: @@@@ -- %02.2f  \n", f, mags[i])
 			}
-			//else {
-				//fmt.Printf("%.fHz:      -- %02.2f  \n", f, mags[i])
-			//}
 		}
 
-		if detection {
-			fmt.Print(".")
-		} else {
-			fmt.Print(" ")
-		}
+		detectionCh <- detection
 
-		//fmt.Printf("\033[%dA\r", len(frequencies) + 1)
+}
+
+func HandleDetection(detectionCh <- chan bool, done <- chan struct{}) {
+	for {
+		select {
+		case morseDetected := <-detectionCh:
+			if morseDetected {
+				fmt.Printf("%c", 0x2584)
+			} else {
+				fmt.Print(" ")
+			}
+		case <- done:
+			fmt.Println("Exiting detection routine")
+			return 
+		}
+	}
 }
 
 func main() {
@@ -120,9 +123,15 @@ func main() {
 	fmt.Println("\n\n--- Initializing capture ---")
 	device.Start()
 
+
+	done := make(chan struct{}, 1)
+  go HandleDetection(detectionCh, done)
+
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	<-sig
+
+	close(done)
 
 	fmt.Println("\nExiting...")
 }
