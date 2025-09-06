@@ -13,8 +13,8 @@ type treeNode struct {
 }
 
 type DecoderConfig struct {
-	wpm      int
-	tolerace float64
+	Wpm      int
+	Tolerace float64
 }
 
 type MorseDecoder struct {
@@ -29,8 +29,8 @@ type MorseDecoder struct {
 }
 
 type Detection struct {
-	state    bool
-	duration time.Duration
+	State    bool
+	Duration time.Duration
 }
 
 func NewMorseDecoder(in <-chan Detection, out chan<- string, done <-chan struct{}, cfg DecoderConfig) *MorseDecoder {
@@ -73,13 +73,13 @@ func (md *MorseDecoder) StartDecode() {
 
 func (md *MorseDecoder) decode(d Detection) {
 	// If on, determine if dit or dah
-	if d.state {
+	if d.State {
 		if md.currentNode == nil {
 			// Ignore, we're in error state.
 			return
 		}
 
-		if md.approxDitLength(d.duration) {
+		if md.approxDitLength(d.Duration) {
 			if md.currentNode.left != nil {
 				// Dit, go left.
 				md.currentNode = md.currentNode.left
@@ -88,7 +88,7 @@ func (md *MorseDecoder) decode(d Detection) {
 				// Code doesn't exist. Put in error state.
 				md.currentNode = nil
 			}
-		} else if md.approxDahLength(d.duration) {
+		} else if md.approxDahLength(d.Duration) {
 			if md.currentNode.right != nil {
 				// Dah, go right.
 				md.currentNode = md.currentNode.right
@@ -110,7 +110,7 @@ func (md *MorseDecoder) decode(d Detection) {
 			return
 		}
 
-		if md.approxBetweenBeepLength(d.duration) {
+		if md.approxBetweenBeepLength(d.Duration) {
 			// Do nothing, wait for next dit or dah.
 
 		} else {
@@ -122,11 +122,11 @@ func (md *MorseDecoder) decode(d Detection) {
 				return
 			}
 
-			if md.approxBetweenCharLength(d.duration) {
+			if md.approxBetweenCharLength(d.Duration) {
 				md.decodeOut <- string(md.currentNode.char)
 				md.currentNode = md.root
 
-			} else if md.approxBetweenWordLength(d.duration) {
+			} else if md.approxBetweenWordLength(d.Duration) {
 				md.decodeOut <- fmt.Sprintf("%s ", string(md.currentNode.char))
 				md.currentNode = md.root
 
@@ -140,45 +140,45 @@ func (md *MorseDecoder) decode(d Detection) {
 }
 
 func (md *MorseDecoder) approxDitLength(d time.Duration) bool {
-	ditLength := float64(60000) / float64(50*md.config.wpm)
-	max := int64(ditLength + ditLength*md.config.tolerace)
-	min := int64(ditLength - ditLength*md.config.tolerace)
+	ditLength := float64(60000) / float64(50*md.config.Wpm)
+	max := int64(ditLength + ditLength*md.config.Tolerace)
+	min := int64(ditLength - ditLength*md.config.Tolerace)
 
 	dm := d.Milliseconds()
 	return dm >= min && dm <= max
 }
 
 func (md *MorseDecoder) approxDahLength(d time.Duration) bool {
-	ditLength := float64(60000) / float64(50*md.config.wpm)
-	max := 3 * int64(ditLength+ditLength*md.config.tolerace)
-	min := 3 * int64(ditLength-ditLength*md.config.tolerace)
+	ditLength := float64(60000) / float64(50*md.config.Wpm)
+	max := 3 * int64(ditLength+ditLength*md.config.Tolerace)
+	min := 3 * int64(ditLength-ditLength*md.config.Tolerace)
 
 	dm := d.Milliseconds()
 	return dm >= min && dm <= max
 }
 
 func (md *MorseDecoder) approxBetweenBeepLength(d time.Duration) bool {
-	ditLength := float64(60000) / float64(50*md.config.wpm)
-	max := int64(ditLength + ditLength*md.config.tolerace)
-	min := int64(ditLength - ditLength*md.config.tolerace)
+	ditLength := float64(60000) / float64(50*md.config.Wpm)
+	max := int64(ditLength + ditLength*md.config.Tolerace)
+	min := int64(ditLength - ditLength*md.config.Tolerace)
 
 	dm := d.Milliseconds()
 	return dm >= min && dm <= max
 }
 
 func (md *MorseDecoder) approxBetweenCharLength(d time.Duration) bool {
-	ditLength := float64(60000) / float64(50*md.config.wpm)
-	max := 3 * int64(ditLength+ditLength*md.config.tolerace)
-	min := 3 * int64(ditLength-ditLength*md.config.tolerace)
+	ditLength := float64(60000) / float64(50*md.config.Wpm)
+	max := 3 * int64(ditLength+ditLength*md.config.Tolerace)
+	min := 3 * int64(ditLength-ditLength*md.config.Tolerace)
 
 	dm := d.Milliseconds()
 	return dm >= min && dm <= max
 }
 
 func (md *MorseDecoder) approxBetweenWordLength(d time.Duration) bool {
-	ditLength := float64(60000) / float64(50*md.config.wpm)
-	max := 7 * int64(ditLength+ditLength*md.config.tolerace)
-	min := 7 * int64(ditLength-ditLength*md.config.tolerace)
+	ditLength := float64(60000) / float64(50*md.config.Wpm)
+	max := 7 * int64(ditLength+ditLength*md.config.Tolerace)
+	min := 7 * int64(ditLength-ditLength*md.config.Tolerace)
 
 	dm := d.Milliseconds()
 	return dm >= min && dm <= max

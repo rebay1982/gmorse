@@ -24,5 +24,8 @@ goertzel: build-goertzel
 detection: build-detection
 	./detection 2>/dev/null
 
+fixsound:
+	systemctl --user restart pipewire
+
 test: 
 	go test -v -count=1 ./...
