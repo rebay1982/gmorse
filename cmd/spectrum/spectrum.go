@@ -85,15 +85,15 @@ func main() {
 		// Window (reduces spectral leakage)
 		// Only apply it to the samples, not the padding.
 		windowing.Hann(samples[:sampleCount])
-		
+
 		for i, s := range samples {
 			fspec[i] = complex(s, 0)
 		}
-		
+
 		//freqSpectrum := fft.RecursiveFFT(fspec)
 		fft.IterativeFFT(fspec)
 		freqSpectrum := fspec
-		
+
 		hannFactorRMS := windowing.HannFactorRMS(int(sampleCount))
 		halfSampleCount := int(sampleCount >> 1)
 		for i := 1; i < int(sampleCount)-1; i++ {
@@ -102,7 +102,7 @@ func main() {
 		}
 		normalizedMags[0] = (fft.ComputeMagnitude(freqSpectrum[0]) / float64(sampleCount)) / hannFactorRMS
 		normalizedMags[halfSampleCount-1] = (fft.ComputeMagnitude(freqSpectrum[halfSampleCount-1]) / float64(sampleCount)) / hannFactorRMS
-		
+
 		timeDiff := time.Now().Sub(startTime)
 		fmt.Printf("Processed %d in %d us          \n", sampleCount, timeDiff/time.Microsecond)
 
@@ -110,10 +110,10 @@ func main() {
 		for j := 0.0; j < 10.0; j += 0.5 {
 			dbFloor := j * -10.0
 			fmt.Printf("%06.2f ", dbFloor)
-		
+
 			for i := range 100 {
 				mag := 20 * math.Log10(normalizedMags[i])
-		
+
 				if mag > dbFloor {
 					fmt.Print("::")
 				} else {
@@ -122,7 +122,7 @@ func main() {
 			}
 			fmt.Println()
 		}
-		
+
 		// Bring the cursor 10 lines up.
 		fmt.Print("\033[21A\r")
 	}
