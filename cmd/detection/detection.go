@@ -80,19 +80,19 @@ func Calibration(detectionLength <- chan int64, done <- chan struct{}) {
 
 
 func HandleDetection(detectionCh <- chan bool, done <- chan struct{}) {
-	calibrating := true
-	calibrationSamplesCount := 0
-	noEdgeCount := 0
-	noEdgeCalibrationTrigger := 1500 // 1500 * 10 (10 ms sample window) == 15seconds
-	maxCalibrationSamples := 10
-	calibrationSamples := make([]time.Duration, 10)
+	//calibrating := true
+	//calibrationSamplesCount := 0
+	//noEdgeCount := 0
+	//noEdgeCalibrationTrigger := 1500 // 1500 * 10 (10 ms sample window) == 15seconds
+	//maxCalibrationSamples := 10
+	//calibrationSamples := make([]time.Duration, 10)
 
 	for {
 		select {
 		case morseDetected := <-detectionCh:
 			// Edge Detection
 			if morseDetected != prevDetection {
-				noEdgeCount = 0		// Reset no edge count for calibration trigger.
+				//noEdgeCount = 0		// Reset no edge count for calibration trigger.
 
 
 
@@ -111,18 +111,18 @@ func HandleDetection(detectionCh <- chan bool, done <- chan struct{}) {
 				if onEnd.After(onStart) {
 					delta := onEnd.Sub(onStart)
 					// We're still calibrating.
-					if calibrating {
-						if calibrationSamplesCount >= maxCalibrationSamples {
-							// Determine WPM based on collected samples.
+					//if calibrating {
+					//	if calibrationSamplesCount >= maxCalibrationSamples {
+					//		// Determine WPM based on collected samples.
 
-							// Exit Calibration
-							calibrationSamplesCount = 0
-							calibrating = false
+					//		// Exit Calibration
+					//		calibrationSamplesCount = 0
+					//		calibrating = false
 
-						} else {
-							calibrationSamples[calibrationSamplesCount] = delta
-						}
-					}
+					//	} else {
+					//		calibrationSamples[calibrationSamplesCount] = delta
+					//	}
+					//}
 					fmt.Printf("Last on lasted %d\n", delta.Milliseconds())
 				}
 
@@ -131,12 +131,12 @@ func HandleDetection(detectionCh <- chan bool, done <- chan struct{}) {
 				prevDetection = morseDetected
 
 			// No edge detection
-			} else {
-				noEdgeCount++
-				if noEdgeCount > noEdgeCalibrationTrigger {
-					noEdgeCount = 0
-					calibrating = true
-				}
+			//} else {
+			//	noEdgeCount++
+			//	if noEdgeCount > noEdgeCalibrationTrigger {
+			//		noEdgeCount = 0
+			//		calibrating = true
+			//	}
 			}
 
 
