@@ -1,11 +1,15 @@
 package decode
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type TreeNode struct {
-	character string
-	leftNode *TreeNode
-	rightNode *TreeNode
+	// TODO: Make this with Generics?
+	char byte
+	left *TreeNode
+	right *TreeNode
 }
 
 type MorseDecoder struct {
@@ -23,7 +27,7 @@ type Detection struct {
 }
 
 func NewMorseDecoder(in chan<-Detection, cancel chan<-struct{}, wpm int) *MorseDecoder {
-	root := initTree()
+	root := buildMorseDecodeTree()
 
 	decoder := &MorseDecoder{
 		decodeRoot: root,
@@ -36,9 +40,61 @@ func NewMorseDecoder(in chan<-Detection, cancel chan<-struct{}, wpm int) *MorseD
 	return decoder
 }
 
-func initTree() *TreeNode {
+var charsE = []byte{'I', 'A', 'S', 'U', 'H', 'V', 'F', ' '}
 
-	return nil
+func buildMorseDecodeTree() *TreeNode {
+	var morseTable = map[byte]string{
+		'A': ".-",
+		'B': "-...",
+		'C': "-.-.",
+		'D': "-..",
+		'E': ".",
+		'F': "..-.",
+		'G': "--.",
+		'H': "....",
+		'I': "..",
+		'J': ".---",
+		'K': "-.-",
+		'L': ".-..",
+		'M': "--",
+		'N': "-.",
+		'O': "---",
+		'P': ".--.",
+		'Q': "--.-",
+		'R': ".-.",
+		'S': "...",
+		'T': "-",
+		'U': "..-",
+		'V': "...-",
+		'W': ".--",
+		'X': "-..-",
+		'Y': "-.--",
+		'Z': "--..",
+	}
+
+	// Build the tree based on the morse table above.
+	root := &TreeNode{}
+	for letter, code := range morseTable {
+		index := root
+		for i := 0; i < len(code); i++ {
+			c := code[i]
+			switch c {
+			case '.':
+				if index.left == nil {
+					index.left = &TreeNode{}
+				}
+				index = index.left
+			case '-':
+				if index.right == nil {
+					index.right = &TreeNode{}
+				}
+				index = index.right
+			}
+		}
+		index.char = letter
+	}
+
+	return root
 }
 
 func (md *MorseDecoder) Decode() {
