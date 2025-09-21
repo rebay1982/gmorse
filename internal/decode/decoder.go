@@ -3,6 +3,8 @@ package decode
 import (
 	"fmt"
 	"time"
+
+	"honnef.co/go/tools/analysis/code"
 )
 
 type TreeNode struct {
@@ -12,10 +14,15 @@ type TreeNode struct {
 	right *TreeNode
 }
 
+type decoderConfig struct {
+	root *TreeNode
+	wpm int
+	tolerace float64
+}
 type MorseDecoder struct {
-	decodeRoot *TreeNode
+	config decoderConfig
+
 	currentNode *TreeNode
-	decodeWpm int
 
 	decodeIn <-chan Detection
 	decodeStop <-chan struct{}
@@ -27,12 +34,15 @@ type Detection struct {
 }
 
 func NewMorseDecoder(in <-chan Detection, done <-chan struct{}, wpm int) *MorseDecoder {
-	root := buildMorseDecodeTree()
+	config := decoderConfig{
+		root: buildMorseDecodeTree(),
+		wpm: wpm,
+		tolerace: 0.4,
+	}
 
 	decoder := &MorseDecoder{
-		decodeRoot: root,
-		currentNode: root,
-		decodeWpm: wpm,
+		config: config,
+		currentNode: config.root,
 		decodeIn: in,
 		decodeStop: done,
 	}
@@ -58,15 +68,93 @@ func (md *MorseDecoder) StartDecode() {
 }
 
 func (md *MorseDecoder) decode(d Detection) {
-
-	wpm := md.decodeWpm
-
 	// If on, determine if dit or dah
 	// If off, determine if space between dit and dah, or end character or end word.
+	if d.state {
+		if md.approxDitLength(d.duration) {
+			if md.currentNode.left != nil {
+				// Dit, go left.
+				md.currentNode = md.currentNode.left
+			} else {
+				// Code doesn't exist.
+				md.currentNode = md.config.root
+				fmt.Print("?")
+			}
+		}	else if md.approxDahLength(d.duration) {
+			if md.currentNode.right != nil {
+				// Dah, go right.
+				md.currentNode = md.currentNode.right
+			} else {
+				// Char doesn't exist.
+				md.currentNode = md.config.root
+				fmt.Print("?")
+			}
+		} else {
+			// Scrap word and start over.
+			md.currentNode = md.config.root
+		}
 
-	if d.
+	} else {
+		if md.approxBetweenBeepLength(d.duration) {
+			fmt.Print(".\033[1C")
+		}	else if md.approxBetweenCharLength(d.duration) {
+			fmt.Print(md.currentNode.char)	
+			md.currentNode = md.config.root
 
+		}	else if md.approxBetweenWordLength(d.duration) {
+			fmt.Print(md.currentNode.char)	
+			md.currentNode = md.config.root
 
+		} else {
+			fmt.Printf("%s??", string(md.currentNode.char))
+			md.currentNode = md.config.root
+		}
+	}
+}
+
+func (md *MorseDecoder) approxDitLength(d time.Duration) bool {
+	ditLength := float64(60000)/float64(50 * md.config.wpm)
+	max := int64(ditLength + ditLength*md.config.tolerace)
+	min := int64(ditLength - ditLength*md.config.tolerace)
+
+	dm := d.Milliseconds()
+	return dm >= min && dm <= max
+}
+
+func (md *MorseDecoder) approxDahLength(d time.Duration) bool {
+	ditLength := float64(60000)/float64(50 * md.config.wpm)
+	max := 3*int64(ditLength + ditLength*md.config.tolerace)
+	min := 3*int64(ditLength - ditLength*md.config.tolerace)
+
+	dm := d.Milliseconds()
+	return dm >= min && dm <= max
+}
+
+func (md *MorseDecoder) approxBetweenBeepLength(d time.Duration) bool {
+	ditLength := float64(60000)/float64(50 * md.config.wpm)
+	max := int64(ditLength + ditLength*md.config.tolerace)
+	min := int64(ditLength - ditLength*md.config.tolerace)
+
+	dm := d.Milliseconds()
+	return dm >= min && dm <= max
+}
+
+func (md *MorseDecoder) approxBetweenCharLength(d time.Duration) bool {
+	ditLength := float64(60000)/float64(50 * md.config.wpm)
+	max := 3*int64(ditLength + ditLength*md.config.tolerace)
+	min := 3*int64(ditLength - ditLength*md.config.tolerace)
+
+	dm := d.Milliseconds()
+	return dm >= min && dm <= max
+}
+
+func (md *MorseDecoder) approxBetweenWordLength(d time.Duration) bool {
+	ditLength := float64(60000)/float64(50 * md.config.wpm)
+	max := 7*int64(ditLength + ditLength*md.config.tolerace)
+	min := 7*int64(ditLength - ditLength*md.config.tolerace)
+
+	dm := d.Milliseconds()
+	return dm >= min && dm <= max
 }
 
 func buildMorseDecodeTree() *TreeNode {
