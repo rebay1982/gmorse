@@ -17,8 +17,8 @@ type MorseDecoder struct {
 	currentNode *TreeNode
 	decodeWpm int
 
-	decodeIn chan<-Detection
-	decodeStop chan<-struct{}
+	decodeIn <-chan Detection
+	decodeStop <-chan struct{}
 }
 
 type Detection struct {
@@ -26,7 +26,7 @@ type Detection struct {
 	duration time.Duration
 }
 
-func NewMorseDecoder(in chan<-Detection, cancel chan<-struct{}, wpm int) *MorseDecoder {
+func NewMorseDecoder(in <-chan Detection, done <-chan struct{}, wpm int) *MorseDecoder {
 	root := buildMorseDecodeTree()
 
 	decoder := &MorseDecoder{
@@ -34,13 +34,40 @@ func NewMorseDecoder(in chan<-Detection, cancel chan<-struct{}, wpm int) *MorseD
 		currentNode: root,
 		decodeWpm: wpm,
 		decodeIn: in,
-		decodeStop: cancel,
+		decodeStop: done,
 	}
 
 	return decoder
 }
 
-var charsE = []byte{'I', 'A', 'S', 'U', 'H', 'V', 'F', ' '}
+// StartDecode Fire up morse decoding. This will listen to the channels provided upon creation until the done channel is
+//   closed.
+func (md *MorseDecoder) StartDecode() {
+
+	go func() {
+		for {
+			select {
+			case in := <-md.decodeIn:
+				md.decode(in)
+				fmt.Println(in.state)
+			case <-md.decodeStop:
+				return
+			}
+		}
+	}()
+}
+
+func (md *MorseDecoder) decode(d Detection) {
+
+	wpm := md.decodeWpm
+
+	// If on, determine if dit or dah
+	// If off, determine if space between dit and dah, or end character or end word.
+
+	if d.
+
+
+}
 
 func buildMorseDecodeTree() *TreeNode {
 	var morseTable = map[byte]string{
@@ -76,7 +103,7 @@ func buildMorseDecodeTree() *TreeNode {
 	root := &TreeNode{}
 	for letter, code := range morseTable {
 		index := root
-		for i := 0; i < len(code); i++ {
+		for i := range (len(code)) {
 			c := code[i]
 			switch c {
 			case '.':
@@ -97,10 +124,3 @@ func buildMorseDecodeTree() *TreeNode {
 	return root
 }
 
-func (md *MorseDecoder) Decode() {
-
-	for {
-		
-
-	}
-}
