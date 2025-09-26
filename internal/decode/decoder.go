@@ -12,14 +12,15 @@ type TreeNode struct {
 	right *TreeNode
 }
 
-type decoderConfig struct {
-	root     *TreeNode
+type DecoderConfig struct {
 	wpm      int
 	tolerace float64
 }
-type MorseDecoder struct {
-	config decoderConfig
 
+type MorseDecoder struct {
+	config DecoderConfig
+
+	root     *TreeNode
 	currentNode *TreeNode
 
 	decodeIn   <-chan Detection
@@ -32,16 +33,12 @@ type Detection struct {
 	duration time.Duration
 }
 
-func NewMorseDecoder(in <-chan Detection, out chan<- string, done <-chan struct{}, wpm int) *MorseDecoder {
-	config := decoderConfig{
-		root:     buildMorseDecodeTree(),
-		wpm:      wpm,
-		tolerace: 0.4,
-	}
-
+func NewMorseDecoder(in <-chan Detection, out chan<- string, done <-chan struct{}, cfg DecoderConfig) *MorseDecoder {
+	root := buildMorseDecodeTree()
 	decoder := &MorseDecoder{
-		config:      config,
-		currentNode: config.root,
+		config:      cfg,
+		root:     	 root,
+		currentNode: root,
 		decodeIn:    in,
 		decodeOut:   out,
 		decodeStop:  done,
@@ -56,7 +53,7 @@ func NewMorseDecoder(in <-chan Detection, out chan<- string, done <-chan struct{
 func (md *MorseDecoder) StartDecode() {
 
 	// Reset
-	md.currentNode = md.config.root
+	md.currentNode = md.root
 
 	go func() {
 		for {
@@ -64,7 +61,7 @@ func (md *MorseDecoder) StartDecode() {
 			case in := <-md.decodeIn:
 				md.decode(in)
 			case <-md.decodeStop:
-				if md.currentNode != md.config.root {
+				if md.currentNode != md.root {
 					md.decodeOut <- string(md.currentNode.char)
 				}
 				close(md.decodeOut)
@@ -85,7 +82,7 @@ func (md *MorseDecoder) decode(d Detection) {
 
 			} else {
 				// Code doesn't exist.
-				md.currentNode = md.config.root
+				md.currentNode = md.root
 				md.decodeOut <- "?"
 			}
 
@@ -96,13 +93,13 @@ func (md *MorseDecoder) decode(d Detection) {
 
 			} else {
 				// Char doesn't exist.
-				md.currentNode = md.config.root
+				md.currentNode = md.root
 				md.decodeOut <- "?"
 			}
 
 		} else {
 			// Scrap word and start over.
-			md.currentNode = md.config.root
+			md.currentNode = md.root
 		}
 
 	} else {
@@ -111,16 +108,16 @@ func (md *MorseDecoder) decode(d Detection) {
 
 		} else if md.approxBetweenCharLength(d.duration) {
 			md.decodeOut <- string(md.currentNode.char)
-			md.currentNode = md.config.root
+			md.currentNode = md.root
 
 		} else if md.approxBetweenWordLength(d.duration) {
 			md.decodeOut <- fmt.Sprintf("%s ", string(md.currentNode.char))
-			md.currentNode = md.config.root
+			md.currentNode = md.root
 
 		} else {
 			// And transmission? assume so...
 			md.decodeOut <- fmt.Sprintf("%s ", string(md.currentNode.char))
-			md.currentNode = md.config.root
+			md.currentNode = md.root
 		}
 	}
 }

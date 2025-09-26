@@ -141,16 +141,20 @@ func Test_Decode(t *testing.T) {
 		},
 	}
 
+	config := DecoderConfig{
+		wpm: 25,
+		tolerace: 0.4,
+	}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			wpm := 25
 			decodeOut := make(chan string)
 			decodeIn := make(chan Detection)
 			done := make(chan struct{})
 			defer close(decodeIn)
 			defer close(done)
 
-			decoder := NewMorseDecoder(decodeIn, decodeOut, done, wpm)
+			decoder := NewMorseDecoder(decodeIn, decodeOut, done, config)
 			decoder.StartDecode()
 
 			output := ""
