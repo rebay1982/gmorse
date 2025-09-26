@@ -30,7 +30,7 @@ func Test_Decode(t *testing.T) {
 			exp: "T",
 		},
 		{
-			name: "single_character_A",
+			name: "single_character_A", // Sequence, start short.
 			detections: []Detection{
 				{state: true, duration: ditLength},
 				{state: false, duration: ditLength},
@@ -40,7 +40,7 @@ func Test_Decode(t *testing.T) {
 			exp: "A",
 		},
 		{
-			name: "single_character_N",
+			name: "single_character_N",  // Sequence, start long.
 			detections: []Detection{
 				{state: true, duration: 3 * ditLength},
 				{state: false, duration: ditLength},
@@ -50,7 +50,7 @@ func Test_Decode(t *testing.T) {
 			exp: "N",
 		},
 		{
-			name: "single_character_SOS",
+			name: "full_word_SOS",
 			detections: []Detection{
 				{state: true, duration: ditLength},
 				{state: false, duration: ditLength},
@@ -74,7 +74,7 @@ func Test_Decode(t *testing.T) {
 			exp: "SOS",
 		},
 		{
-			name: "single_character_SOS SOS",
+			name: "two_full_words_SOS SOS",
 			detections: []Detection{
 				{state: true, duration: ditLength},
 				{state: false, duration: ditLength},
@@ -114,6 +114,30 @@ func Test_Decode(t *testing.T) {
 				{state: false, duration: 3 * ditLength},
 			},
 			exp: "SOS SOS",
+		},
+		{
+			name: "single_character_off_timing_positive_U",
+			detections: []Detection{
+				{state: true, duration:  time.Duration(float64(ditLength) * 1.2)},
+				{state: false, duration: time.Duration(float64(ditLength) * 1.2)},
+				{state: true, duration:  time.Duration(float64(ditLength) * 1.2)},
+				{state: false, duration: time.Duration(float64(ditLength) * 1.2)},
+				{state: true, duration:  time.Duration(float64(3 * ditLength) * 1.2)},
+				{state: false, duration: time.Duration(float64(3 * ditLength) * 1.2)},
+			},
+			exp: "U",
+		},
+		{
+			name: "single_character_off_timing_negative_U",
+			detections: []Detection{
+				{state: true, duration:  time.Duration(float64(ditLength) * 0.8)},
+				{state: false, duration: time.Duration(float64(ditLength) * 0.8)},
+				{state: true, duration:  time.Duration(float64(ditLength) * 0.8)},
+				{state: false, duration: time.Duration(float64(ditLength) * 0.8)},
+				{state: true, duration:  time.Duration(float64(3 * ditLength) * 0.8)},
+				{state: false, duration: time.Duration(float64(3 * ditLength) * 0.8)},
+			},
+			exp: "U",
 		},
 	}
 
