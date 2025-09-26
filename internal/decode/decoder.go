@@ -64,7 +64,6 @@ func (md *MorseDecoder) StartDecode() {
 			case in := <-md.decodeIn:
 				md.decode(in)
 			case <-md.decodeStop:
-				// Print wherever you were.
 				if md.currentNode != md.config.root {
 					md.decodeOut <- string(md.currentNode.char)
 				}
