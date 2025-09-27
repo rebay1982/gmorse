@@ -6,10 +6,10 @@ import (
 )
 
 // TODO: Make this with Generics?
-type TreeNode struct {
+type treeNode struct {
 	char  byte
-	left  *TreeNode
-	right *TreeNode
+	left  *treeNode
+	right *treeNode
 }
 
 type DecoderConfig struct {
@@ -20,8 +20,8 @@ type DecoderConfig struct {
 type MorseDecoder struct {
 	config DecoderConfig
 
-	root     *TreeNode
-	currentNode *TreeNode
+	root        *treeNode
+	currentNode *treeNode
 
 	decodeIn   <-chan Detection
 	decodeOut  chan<- string
@@ -37,7 +37,7 @@ func NewMorseDecoder(in <-chan Detection, out chan<- string, done <-chan struct{
 	root := buildMorseDecodeTree()
 	decoder := &MorseDecoder{
 		config:      cfg,
-		root:     	 root,
+		root:        root,
 		currentNode: root,
 		decodeIn:    in,
 		decodeOut:   out,
@@ -167,7 +167,7 @@ func (md *MorseDecoder) approxBetweenWordLength(d time.Duration) bool {
 	return dm >= min && dm <= max
 }
 
-func buildMorseDecodeTree() *TreeNode {
+func buildMorseDecodeTree() *treeNode {
 	var morseTable = map[byte]string{
 		'A': ".-",
 		'B': "-...",
@@ -198,7 +198,7 @@ func buildMorseDecodeTree() *TreeNode {
 	}
 
 	// Build the tree based on the morse table above.
-	root := &TreeNode{}
+	root := &treeNode{}
 	for letter, code := range morseTable {
 		index := root
 		for i := range len(code) {
@@ -206,12 +206,12 @@ func buildMorseDecodeTree() *TreeNode {
 			switch c {
 			case '.':
 				if index.left == nil {
-					index.left = &TreeNode{}
+					index.left = &treeNode{}
 				}
 				index = index.left
 			case '-':
 				if index.right == nil {
-					index.right = &TreeNode{}
+					index.right = &treeNode{}
 				}
 				index = index.right
 			}

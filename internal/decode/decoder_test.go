@@ -40,7 +40,7 @@ func Test_Decode(t *testing.T) {
 			exp: "A",
 		},
 		{
-			name: "single_character_N",  // Sequence, start long.
+			name: "single_character_N", // Sequence, start long.
 			detections: []Detection{
 				{state: true, duration: 3 * ditLength},
 				{state: false, duration: ditLength},
@@ -118,31 +118,31 @@ func Test_Decode(t *testing.T) {
 		{
 			name: "single_character_off_timing_positive_U",
 			detections: []Detection{
-				{state: true, duration:  time.Duration(float64(ditLength) * 1.2)},
+				{state: true, duration: time.Duration(float64(ditLength) * 1.2)},
 				{state: false, duration: time.Duration(float64(ditLength) * 1.2)},
-				{state: true, duration:  time.Duration(float64(ditLength) * 1.2)},
+				{state: true, duration: time.Duration(float64(ditLength) * 1.2)},
 				{state: false, duration: time.Duration(float64(ditLength) * 1.2)},
-				{state: true, duration:  time.Duration(float64(3 * ditLength) * 1.2)},
-				{state: false, duration: time.Duration(float64(3 * ditLength) * 1.2)},
+				{state: true, duration: time.Duration(float64(3*ditLength) * 1.2)},
+				{state: false, duration: time.Duration(float64(3*ditLength) * 1.2)},
 			},
 			exp: "U",
 		},
 		{
 			name: "single_character_off_timing_negative_U",
 			detections: []Detection{
-				{state: true, duration:  time.Duration(float64(ditLength) * 0.8)},
+				{state: true, duration: time.Duration(float64(ditLength) * 0.8)},
 				{state: false, duration: time.Duration(float64(ditLength) * 0.8)},
-				{state: true, duration:  time.Duration(float64(ditLength) * 0.8)},
+				{state: true, duration: time.Duration(float64(ditLength) * 0.8)},
 				{state: false, duration: time.Duration(float64(ditLength) * 0.8)},
-				{state: true, duration:  time.Duration(float64(3 * ditLength) * 0.8)},
-				{state: false, duration: time.Duration(float64(3 * ditLength) * 0.8)},
+				{state: true, duration: time.Duration(float64(3*ditLength) * 0.8)},
+				{state: false, duration: time.Duration(float64(3*ditLength) * 0.8)},
 			},
 			exp: "U",
 		},
 	}
 
 	config := DecoderConfig{
-		wpm: 25,
+		wpm:      25,
 		tolerace: 0.4,
 	}
 
